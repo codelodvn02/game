@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Password Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-color: black;
+            color: white;
+        }
+
+        #rules {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        input {
+            margin: 10px;
+            padding: 10px;
+            width: 320px;
+            font-size: 16px;
+            border: 2px solid #4CAF50;
+            border-radius: 5px;
+            background-color: #222;
+            color: white;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #00ff00;
+        }
+
+        .valid {
+            color: green;
+        }
+
+        .invalid {
+            color: red;
+        }
+
+        .platform-images {
+            display: none;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .platform-images img {
+            width: 100px;
+            height: 100px;
+            background-color: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .rule-completed {
+            color: yellow;
+        }
+
+        #achievementCounter {
+            color: #00BFFF;
+            font-size: 14px;
+            margin-top: 20px;
+            position: absolute;
+            top: 70px;
+            left: 10px;
+        }
+
+        #resetGame {
+            margin-top: 20px;
+            padding: 10px;
+            font-size: 12px;
+            background-color: white;
+            color: black;
+            border-radius: 5px;
+            cursor: pointer;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            transition: background-color 0.3s;
+        }
+
+        #resetGame:hover {
+            background-color: #f0f0f0;
+        }
+
+        #gameOverMessage {
+            display: none;
+            color: red;
+            font-size: 36px;
+            margin-top: 20px;
+        }
+
+        #tryAgain {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        #tryAgain:hover {
+            background-color: #45a049;
+        }
+
+        #completionMessage {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: yellow;
+            color: black;
+            padding: 20px;
+            font-size: 24px;
+            border-radius: 10px;
+            font-weight: bold;
+            z-index: 9999;
+        }
+
+        #timer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: yellow;
+            font-size: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Password Puzzle 2</h1>
+    <input type="text" id="password" placeholder="Nhập mật khẩu của bạn" oninput="checkPassword()">
+    <div id="feedback"></div>
+    <h2>Quy tắc</h2>
+    <ul id="rules"></ul>
+    <div class="platform-images" id="platformImages">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_%282019%29.png" alt="Facebook">
+        <img src="https://upload.wikimedia.org/wikipedia/en/a/a9/TikTok_logo.svg" alt="TikTok">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/YouTube_Logo_2017.svg" alt="YouTube">
+    </div>
+
+    <div id="resetGame" onclick="resetGame()">Reset Game</div>
+    <div id="achievementCounter">Tiến trình: 0/31</div>
+    <div id="gameOverMessage">Game Over❌</div>
+    <button id="tryAgain" onclick="resetGame()">Thử lại</button>
+
+    <div id="completionMessage">Bro is a sigma.</div>
+
+    <div id="timer">Thời gian: 00:00</div>
+
+    <script>
+        const rules = [
+            "Rule 0: Nhập một mật khẩu ngẫu nhiên.",
+            "Rule 1: Phải có ít nhất 8 ký tự.",
+            "Rule 2: Phải có ít nhất một chữ cái viết hoA.",
+            "Rule 3: Mật khẩu phải có một trong ba nền tảng sau:.",
+            "Rule 4: Mật khẩu cần có ít nhất một số.",
+            "Rule 5: Mật khẩu cần có ít nhất một ký tự đặc biệt.",
+            "Rule 6: 3x - 5 < 2x + 4, kí tự đầu tiên của mật khẩu phải chứa một nghiệm của bất phương trình.",
+            "Rule 7: Bên trắng đi trước,tìm nước đi hòa. <a href='https://codelodvn.github.io/theco/' target='_blank'>chi tiết thế cờ</a>",
+            "Rule 8: Vị trí này ở quốc Da nào? <a href='https://www.google.com/maps/place/Davenport+L%C3%A3nh+th%E1%BB%95+B%E1%BA%AFc+%C3%9Ic+0872,+%C3%9Ic/@-20.9625609,134.2075786,3a,75y,90t/data=!3m7!1e1!3m5!1sx0kis4vR7FKro88m2Z1D_A!2e0!6shttps:%2F%2Fstreetviewpixels-pa.googleapis.com%2Fv1%2Fthumbnail%3Fcb_client%3Dmaps_sv.tactile%26w%3D900%26h%3D600%26pitch%3D0%26panoid%3Dx0kis4vR7FKro88m2Z1D_A%26yaw%3D0!7i16384!8i8192!4m6!3m5!1s0x2b4ab3b30f6608fb:0x40217a82a254550!8m2!3d-20.9626754!4d134.2074781!16s%2Fg%2F1thv1nq6?entry=tts&g_ep=EgoyMDI1MDIwOS4wIPu8ASoASAFQAw%3D%3D' target='_blank'>xem</a>",
+            "Rule 9: Mật khẩu là một số.Một bể nước có hai vòi nước với vòi thứ nhất làm đầy bể trong 4 tiếng, vòi thứ hai làm đầy bể trong 6 tiếng. nếu cả hai vòi cùng mở, nhưng có một lỗ rò rỉ làm mất 1/12 bể mỗi giờ, thì bể đầy sau x tiếng.",
+            "Rule 10: Mật khẩu là một emojI bất ngờ!!!.",
+            "Rule 11: Mật khẩu phải chứa ít nhất 3 ký tự đặc biệt.",
+            "Rule 12: Mật khẩu phải là câu trả lời đúng cho bài toáN: 2x + 3 = 15, x = ?.",
+            "Rule 13: Mật khẩu phải có tên biên soạn mĩ thuật sgk kết nối tri thức toán lớp 10 tập hai.",
+            "Rule 14: Mật khẩu có một số thập phân. Cho phép lai 'AaBbDdEe x AaBbDdEe', biết 1 gene quy định tính trạng trội hoàn toàn hãy xác định tỉ lệ cơ thể mang hai alen trội ở f1.",
+            "Rule 15: Mật khẩu phải có từ rất dài và liên quan đến một loại bệnh trong tiếng pháp.",
+            "Rule 16: Một số vô tỉ thường gặp.",
+            "Rule 17: Mật khẩu là một số. một người cha 45 tuổi và người con 25 tuổi. bao nhiêu năm nữa thì tuổi cha gấp đôi tuổi con? biết cha và con có thể sống đến 80 tUổi.",
+            "Rule 18: Mật khẩu có mã hex của màu đen.",
+            "Rule 19: Mật khẩu là tên bộ anime of the years 2016 của shinkai makoTo.",
+            "Rule 20: Mật khẩu là pass 1O.",
+            "Rule 21: Mật khẩu phải có số năm nhuận gần thời điểm hiện tại nhất.",
+            "Rule 22: Cotan độ.",
+            "Rule 23: Mật khẩu chứa tên facebook admin.",
+            "Rule 24: Mật khẩu là sản phẩm bán chạy nhất của playStation.",
+            "Rule 25: Mật khẩu là sản phẩm bán nằm nhất của playStation.",
+            "Rule 26: Kí tự mang ý nghĩa nghi vấn.",
+            "Rule 27: Mật khẩu là tên game này.",
+            "Rule 28: Mật khẩu là 1 số.Thông điệp x của bộ y tế phòng đại dịch covid-19 do sars-cov-2?",
+            "Rule 29: Một tổ gồm 7 nam và 3 nữ.chọn ngẫu nhiên hai người, xác suất để trong hai người được chọn ít nhất một nữ là? mật khẩu làm tròn đến hàng phần trăm.",
+            "Rule 30: Nhìn vào tất cả các rule bạn giải được sẽ tìm được đáp án."
+        ];
+
+        let currentRuleIndex = 0;
+        let achievements = 0;
+        let previousPasswordLength = 0;
+        let startTime = null;
+        let timerInterval = null;
+
+        function updateRulesDisplay() {
+            const rulesList = document.getElementById("rules");
+            rulesList.innerHTML = rules.slice(0, currentRuleIndex + 1).map((rule, index) => {
+                return `<li style='color: ${index < currentRuleIndex ? "green" : (index === currentRuleIndex ? "white" : "yellow")};'>${rule}</li>`;
+            }).reverse().join("");
+
+            document.getElementById("platformImages").style.display = (currentRuleIndex === 3) ? "flex" : "none";
+        }
+
+       function checkPassword() {  
+    const password = document.getElementById("password").value.trim();  
+    const feedback = document.getElementById("feedback");  
+    let valid = false;  
+
+    if (password.length < previousPasswordLength) {
+        document.getElementById("password").value = ""; 
+        return;
+    }
+
+    previousPasswordLength = password.length;
+
+    if (currentRuleIndex < rules.length) {  
+        switch (currentRuleIndex) {  
+            case 0:  
+            valid = true;  
+            break;  
+            case 1:  
+            valid = password.length >= 8;  
+            break;  
+            case 2:  
+            valid = /[A-Z]/.test(password);  
+            break;  
+            case 3:  
+            valid = /facebook|tiktok|youtube/i.test(password);  
+            break;  
+            case 4:  
+            valid = /\d/.test(password);  
+            break;  
+            case 5:  
+            valid = /[!@#$%^&*]/.test(password);  
+            break;  
+            case 6:  
+            valid = parseFloat(password) < 9;  
+            break;  
+            case 7:  
+            valid = password.split(/[^a-z0-9]/i).includes("qf2");  
+            break;  
+            case 8:  
+            valid = password.split(/[^a-zA-Z]/).includes("Australia");  
+            break;  
+            case 9:  
+            valid = password.split(/[^0-9]/).includes("3");  
+            break;  
+            case 10:  
+            valid = password.includes("😲");  
+            break;
+            case 11:  
+            valid = (password.match(/[!@#$%^&*]/g) || []).length >= 3;  
+            break;  
+            case 12:  
+            valid = password.split(/[^0-9]/).includes("6");    
+            break;  
+            case 13:  
+            valid = password.includes("NGUYỄN BÍCH LA");  
+            break; 
+            case 14:  
+            valid = password.includes("0,109375");  
+            break;
+            case 15:  
+            valid = password.includes("hippopotomonstrosesquippedaliophobie");  
+            break;  
+            case 16:  
+            valid = password.includes("π");  
+            break;  
+            case 17:  
+            valid = password.includes("0");   
+            break;  
+            case 18:  
+            valid = password.includes("#000000");   
+            break;  
+            case 19:  
+            valid = password.includes("Your Name");  
+            break;  
+            case 20:  
+            valid = password.includes("Password Puzzle");    
+            break;  
+            case 21:  
+            valid = password.includes("2024");
+            break;  
+            case 22:  
+            valid = password.includes("1");
+            break;  
+            case 23:  
+            valid = password.includes("Dot Toan Yeager");
+            break;  
+            case 24:  
+            valid = password.includes("PS2"); 
+            break;  
+            case 25:  
+            valid = password.includes("PS3");    
+            break;  
+            case 26:  
+            valid = password.includes("?"); 
+            break;  
+            case 27:  
+            valid = password.includes("Password Puzzle 2"); 
+            break;  
+            case 28:  
+            valid = password.includes("5K"); 
+            break;  
+            case 29:  
+            valid = password.includes("0,53");  
+            break; 
+            case 30:  // Rule 30 
+                if (password.includes("ADMINCUTO")) {
+                    valid = true;  
+                }
+                break;
+            default:
+                valid = false;
+        }
+
+        if (valid) {
+            feedback.innerHTML = "<span class='valid'>Mật khẩu hợp lệ!</span>";
+            achievements++;
+            document.getElementById("achievementCounter").innerText = `Tiến trình: ${achievements}/31`;  
+            currentRuleIndex++;  
+            updateRulesDisplay();
+
+            if (currentRuleIndex === 31) { 
+                feedback.innerHTML = "<span class='valid'>Bạn đã phá đảo game!!!.</span>";
+                document.getElementById("completionMessage").style.display = "block";
+                stopTimer();  // Dừng đồng hồ khi hoàn thành
+            }
+        } else {
+            feedback.innerHTML = "<span class='invalid'>Mật khẩu không hợp lệ!</span>";  
+        }
+    }
+}
+
+
+        function resetGame() {
+            currentRuleIndex = 0;
+            achievements = 0;
+            previousPasswordLength = 0;
+            updateRulesDisplay();
+            document.getElementById("password").value = "";  
+            document.getElementById("feedback").innerText = "";  
+            document.getElementById("gameOverMessage").style.display = "none";
+            document.getElementById("tryAgain").style.display = "none";
+            document.getElementById("completionMessage").style.display = "none";
+            document.getElementById("achievementCounter").innerText = "Tiến trình: 0/31";  
+            startTime = Date.now();
+            startTimer();
+        }
+
+        function startTimer() {
+            if (startTime) {
+                timerInterval = setInterval(updateTimer, 1000);
+            }
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        }
+
+        function updateTimer() {
+            const elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+            const seconds = String(elapsedTime % 60).padStart(2, '0');
+            document.getElementById("timer").textContent = `Thời gian: ${minutes}:${seconds}`;
+        }
+
+        window.onload = function() {
+            startTime = Date.now();
+            startTimer();
+        }
+
+        updateRulesDisplay();
+    </script>
+</body>
+</html> 
+
+
+
+
+
+->Lời khuyên: Nên chuyển bàn phím sang ngôn ngữ tiếng Việt.khi chơi nếu xóa 1 ký tự hoặc viết dấu game sẽ kết thúc khi đó người chơi phải nhất reset để "play again".
